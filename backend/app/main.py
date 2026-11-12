@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -76,6 +76,17 @@ class ContactEnquiry(Base):
     subject = Column(String(200))
     message = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+class AssignDepartmentRequest(BaseModel):
+    department_id: int
+    officer_id: Optional[int] = None
+    remarks: Optional[str] = "Assigned by CMO administrator."
+
+class EscalationRequest(BaseModel):
+    remarks: str = "Escalated by CMO: Urgent resolution demanded."
+
+class PrivateNoteRequest(BaseModel):
+    note: str
 
 # Base.metadata.create_all(bind=engine)
 
@@ -188,9 +199,135 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
         "user": {"id": user.id, "name": user.name, "email": user.email, "role": user.role}
     }
 
+# @app.get("/api/departments")
+# def get_departments(db: Session = Depends(get_db)):
+#     return db.query(Department).all()
+
 @app.get("/api/departments")
 def get_departments(db: Session = Depends(get_db)):
-    return db.query(Department).all()
+    depts = db.query(Department).all()
+    result = []
+    for d in depts:
+        officers = db.query(User).filter(User.role == "department_officer").all()
+        result.append({
+            "id": d.id,
+            "name": d.name,
+            "officers": [{"id": o.id, "name": o.name, "email": o.email} for o in officers]
+        })
+    return result
+
+@app.get("/api/cmo/grievances")
+def get_cmo_grievances(db: Session = Depends(get_db)):
+    grievances = db.query(Grievance).order_by(Grievance.created_at.desc()).all()
+    now = datetime.utcnow()
+    
+    formatted = []
+    for g in grievances:
+        dept_name = "Unassigned (CMO Desk)"
+        if g.assigned_dept_id:
+            dept = db.query(Department).filter(Department.id == g.assigned_dept_id).first()
+            if dept:
+                dept_name = dept.name
+        
+        # Calculate if complaint is overdue (> 48 hours without resolution)
+        is_overdue = False
+        if g.status != "Resolved" and g.created_at:
+            is_overdue = (now - g.created_at) > timedelta(hours=48)
+
+        # Get citizen name
+        citizen_name = "Public Citizen"
+        citizen_email = "Not Provided"
+        if g.citizen_id:
+            c = db.query(User).filter(User.id == g.citizen_id).first()
+            if c:
+                citizen_name = c.name
+                citizen_email = c.email
+
+        formatted.append({
+            "id": g.id,
+            "reference_id": g.reference_id,
+            "district": g.district,
+            "category": g.category,
+            "priority": g.priority,
+            "status": g.status,
+            "subject": g.subject,
+            "description": g.description,
+            "ai_summary": g.ai_summary,
+            "department_id": g.assigned_dept_id,
+            "department_name": dept_name,
+            "complainant_name": citizen_name,
+            "complainant_email": citizen_email,
+            "is_overdue": is_overdue,
+            "attachment_url": getattr(g, "attachment_url", None),
+            "created_at": g.created_at.isoformat() + "Z" if g.created_at else None
+        })
+    return formatted
+
+@app.post("/api/cmo/grievances/{id}/assign")
+def assign_grievance(id: int, req: AssignDepartmentRequest, db: Session = Depends(get_db)):
+    g = db.query(Grievance).filter(Grievance.id == id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Grievance not found")
+    
+    dept = db.query(Department).filter(Department.id == req.department_id).first()
+    if not dept:
+        raise HTTPException(status_code=404, detail="Department not found")
+    
+    g.assigned_dept_id = dept.id
+    old_status = g.status
+    g.status = "In Progress"
+    
+    officer_info = ""
+    if req.officer_id:
+        officer = db.query(User).filter(User.id == req.officer_id).first()
+        if officer:
+            officer_info = f" (Officer: {officer.name})"
+
+    hist = GrievanceHistory(
+        grievance_id=g.id,
+        old_status=old_status,
+        new_status="In Progress",
+        remarks=f"CMO Routed to {dept.name}{officer_info}. Directives: {req.remarks}"
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "Grievance assigned successfully"}
+
+@app.post("/api/cmo/grievances/{id}/escalate")
+def escalate_grievance(id: int, req: EscalationRequest, db: Session = Depends(get_db)):
+    g = db.query(Grievance).filter(Grievance.id == id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Grievance not found")
+    
+    g.priority = "High"
+    old_status = g.status
+    g.status = "Escalated"
+    
+    hist = GrievanceHistory(
+        grievance_id=g.id,
+        old_status=old_status,
+        new_status="Escalated",
+        remarks=f"CMO Escalation Protocol Activated: {req.remarks}"
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "Grievance escalated to High Priority"}
+
+@app.post("/api/cmo/grievances/{id}/notes")
+def add_cmo_note(id: int, req: PrivateNoteRequest, db: Session = Depends(get_db)):
+    g = db.query(Grievance).filter(Grievance.id == id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Grievance not found")
+    
+    hist = GrievanceHistory(
+        grievance_id=g.id,
+        old_status=g.status,
+        new_status=g.status,
+        remarks=f"[Internal CMO Note]: {req.note}"
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "Internal note appended to audit logs"}
 
 @app.post("/api/ai/analyze-grievance")
 def analyze_grievance(req: AIRequest, db: Session = Depends(get_db)):

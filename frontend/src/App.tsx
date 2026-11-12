@@ -16,6 +16,7 @@ import CMODashboard from './pages/CMO/CMODashboard';
 import OfficerDashboard from './pages/Officer/OfficerDashboard';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import CmoDashboard from './pages/CMO/CmoDashboard';
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
               <Route path="/register" element={<Register />} />
               <Route path="*" element={<Navigate to="/" replace />} />
               <Route path="/citizen" element={<CitizenDashboard />} />
+              <Route path="/cmo" element={<CmoDashboard />} />
             </Routes>
           </main>
           <Footer />
