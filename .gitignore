@@ -1,0 +1,10 @@
+Set-Content -Path .gitignore -Value @"
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.env
+dist/
+build/
+*.sqlite3
+"@
