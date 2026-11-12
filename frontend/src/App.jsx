@@ -12,12 +12,10 @@ import FAQ from './pages/Public/FAQ';
 import Contact from './pages/Public/Contact';
 import TrackGrievance from './pages/Public/TrackGrievance';
 import SubmitGrievance from './pages/Citizen/SubmitGrievance';
-import CMODashboard from './pages/CMO/CMODashboard';
 import OfficerDashboard from './pages/Officer/OfficerDashboard';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import CmoDashboard from './pages/CMO/CmoDashboard';
-// import OfficerDashboard from './pages/Officer/OfficerDashboard';
 
 export default function App() {
   return (
@@ -27,6 +25,7 @@ export default function App() {
           <Navbar />
           <main className="flex-1">
             <Routes>
+              {/* Public Routes */}
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/how-it-works" element={<HowItWorks />} />
@@ -34,15 +33,19 @@ export default function App() {
               <Route path="/faq" element={<FAQ />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/track" element={<TrackGrievance />} />
-              <Route path="/submit" element={<SubmitGrievance />} />
-              <Route path="/cmo" element={<CMODashboard />} />
-              <Route path="/officer" element={<OfficerDashboard />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+
+              {/* Citizen Portal */}
+              <Route path="/submit" element={<SubmitGrievance />} />
               <Route path="/citizen" element={<CitizenDashboard />} />
+
+              {/* Administrative Desks */}
               <Route path="/cmo" element={<CmoDashboard />} />
               <Route path="/officer" element={<OfficerDashboard />} />
+
+              {/* Catch-all Wildcard */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
           <Footer />
