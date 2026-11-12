@@ -17,6 +17,7 @@ import OfficerDashboard from './pages/Officer/OfficerDashboard';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import CmoDashboard from './pages/CMO/CmoDashboard';
+// import OfficerDashboard from './pages/Officer/OfficerDashboard';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
               <Route path="/citizen" element={<CitizenDashboard />} />
               <Route path="/cmo" element={<CmoDashboard />} />
+              <Route path="/officer" element={<OfficerDashboard />} />
             </Routes>
           </main>
           <Footer />

@@ -87,6 +87,15 @@ class EscalationRequest(BaseModel):
 
 class PrivateNoteRequest(BaseModel):
     note: str
+    
+class OfficerUpdateRequest(BaseModel):
+    status: str
+    remarks: str
+
+class SubmitATRRequest(BaseModel):
+    action_taken_report: str
+    evidence_url: Optional[str] = None
+    final_status: Optional[str] = "Resolved"
 
 # Base.metadata.create_all(bind=engine)
 
@@ -546,10 +555,97 @@ def cmo_action(id: int, action: CMOAction, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Grievance forwarded successfully"}
 
+# @app.get("/api/officer/grievances")
+# def get_officer_grievances(db: Session = Depends(get_db)):
+#     # Returns all forwarded grievances
+#     return db.query(Grievance).filter(Grievance.status.in_(["In Progress", "Resolved"])).all()
 @app.get("/api/officer/grievances")
-def get_officer_grievances(db: Session = Depends(get_db)):
-    # Returns all forwarded grievances
-    return db.query(Grievance).filter(Grievance.status.in_(["In Progress", "Resolved"])).all()
+def get_officer_grievances(dept_id: Optional[int] = None, officer_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(Grievance)
+    
+    # If department ID is passed, scope down to that department
+    if dept_id:
+        query = query.filter(Grievance.assigned_dept_id == dept_id)
+    else:
+        # Default fallback: show all assigned complaints (not unassigned)
+        query = query.filter(Grievance.assigned_dept_id.isnot(None))
+        
+    grievances = query.order_by(Grievance.created_at.desc()).all()
+    
+    result = []
+    for g in grievances:
+        dept = db.query(Department).filter(Department.id == g.assigned_dept_id).first()
+        dept_name = dept.name if dept else "General Department"
+        
+        citizen = db.query(User).filter(User.id == g.citizen_id).first() if g.citizen_id else None
+        
+        latest_hist = (
+            db.query(GrievanceHistory)
+            .filter(GrievanceHistory.grievance_id == g.id)
+            .order_by(GrievanceHistory.timestamp.desc())
+            .first()
+        )
+        
+        result.append({
+            "id": g.id,
+            "reference_id": g.reference_id,
+            "district": g.district,
+            "category": g.category,
+            "priority": g.priority,
+            "status": g.status,
+            "subject": g.subject,
+            "description": g.description,
+            "ai_summary": g.ai_summary,
+            "department_id": g.assigned_dept_id,
+            "department_name": dept_name,
+            "complainant_name": citizen.name if citizen else "Public Citizen",
+            "complainant_email": citizen.email if citizen else "Not Provided",
+            "latest_remarks": latest_hist.remarks if latest_hist else "Forwarded by CMO.",
+            "created_at": g.created_at.isoformat() + "Z" if g.created_at else None
+        })
+    return result
+
+@app.post("/api/officer/grievances/{id}/status")
+def update_officer_status(id: int, req: OfficerUpdateRequest, db: Session = Depends(get_db)):
+    g = db.query(Grievance).filter(Grievance.id == id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Grievance not found")
+        
+    old_status = g.status
+    g.status = req.status
+    
+    hist = GrievanceHistory(
+        grievance_id=g.id,
+        old_status=old_status,
+        new_status=req.status,
+        remarks=f"[Officer Field Update]: {req.remarks}"
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "Status updated successfully"}
+
+@app.post("/api/officer/grievances/{id}/atr")
+def submit_atr(id: int, req: SubmitATRRequest, db: Session = Depends(get_db)):
+    g = db.query(Grievance).filter(Grievance.id == id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Grievance not found")
+        
+    old_status = g.status
+    g.status = req.final_status
+    
+    remarks = f"Action-Taken Report (ATR) Submitted: {req.action_taken_report}"
+    if req.evidence_url:
+        remarks += f" | Evidence Attached: {req.evidence_url}"
+        
+    hist = GrievanceHistory(
+        grievance_id=g.id,
+        old_status=old_status,
+        new_status=req.final_status,
+        remarks=remarks
+    )
+    db.add(hist)
+    db.commit()
+    return {"message": "ATR submitted and routed back to CMO"}
 
 @app.patch("/api/grievances/{id}/officer-action")
 def officer_action(id: int, action: OfficerAction, db: Session = Depends(get_db)):
