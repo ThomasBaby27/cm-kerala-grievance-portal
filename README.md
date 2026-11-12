@@ -8,10 +8,10 @@ An AI-augmented, role-based public grievance management platform designed for tr
 
 | Component | Platform | URL |
 | :--- | :--- | :--- |
-| **Frontend Portal** | Vercel | `[https://cm-kerala-grievance-portal-frontend.vercel.app](https://cm-kerala-grievance-portal-frontend.vercel.app)` |
-| **Backend API** | Render | `[https://cm-kerala-api-yjw1.onrender.com](https://cm-kerala-api-yjw1.onrender.com)` |
-| **Interactive API Docs** | Swagger UI | `[https://cm-kerala-api-yjw1.onrender.com/docs](https://cm-kerala-api-yjw1.onrender.com/docs)` |
-| **Alternative Docs** | ReDoc | `[https://cm-kerala-api-yjw1.onrender.com/redoc](https://cm-kerala-api-yjw1.onrender.com/redoc)` |
+| **Frontend Portal** | Vercel | `[https://cm-kerala-grievance-portal-frontend.vercel.app]` |
+| **Backend API** | Render | `[https://cm-kerala-api-yjw1.onrender.com]` |
+| **Interactive API Docs** | Swagger UI | `[https://cm-kerala-api-yjw1.onrender.com/docs]` |
+| **Alternative Docs** | ReDoc | `[https://cm-kerala-api-yjw1.onrender.com/redoc]` |
 
 ---
 
