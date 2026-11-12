@@ -51,7 +51,7 @@ export default function CMODashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-6 text-xs">
-      <h1 className="text-2xl font-bold text-slate-900">Chief Minister's Office — Redressal Console</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Chief Minister's Office ï¿½ Redressal Console</h1>
       <div className="grid grid-cols-4 gap-3 text-center">
         <div className="bg-white p-4 rounded-xl border"><div className="text-slate-500 font-semibold">Total</div><div className="text-2xl font-bold text-slate-900">{stats.total || grievances.length}</div></div>
         <div className="bg-white p-4 rounded-xl border"><div className="text-blue-600 font-semibold">Pending</div><div className="text-2xl font-bold text-blue-600">{stats.pending || 0}</div></div>

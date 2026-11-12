@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-
+import CitizenDashboard from './pages/Citizen/CitizenDashboard';
 import Home from './pages/Public/Home';
 import About from './pages/Public/About';
 import HowItWorks from './pages/Public/HowItWorks';
@@ -38,6 +38,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/citizen" element={<CitizenDashboard />} />
             </Routes>
           </main>
           <Footer />
