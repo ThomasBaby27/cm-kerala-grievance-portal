@@ -15,7 +15,7 @@ import SubmitGrievance from './pages/Citizen/SubmitGrievance';
 import OfficerDashboard from './pages/Officer/OfficerDashboard';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
-import CmoDashboard from './pages/CMO/CmoDashboard';
+import CmoDashboard from "./pages/CMO/CMODashboard";
 
 export default function App() {
   return (
